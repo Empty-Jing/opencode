@@ -10,6 +10,7 @@ import { useRenderer } from "@opentui/solid"
 import { getInteractiveMcpConfig } from "@tui/mcp/interactive"
 import { TuiMcpInputCache } from "@tui/mcp/input-cache"
 import { resolveMcpInputs } from "@/mcp/input-template"
+import { inheritTerminalCursorStyle } from "@/cli/cmd/cursor-style"
 import { onCleanup } from "solid-js"
 
 const id = "internal:sidebar-mcp"
@@ -372,6 +373,7 @@ function View(props: { api: TuiPluginApi }) {
                                 textColor={theme().text}
                                 focusedTextColor={theme().text}
                                 cursorColor={theme().primary}
+                                cursorStyle={inheritTerminalCursorStyle}
                                 onMouseDown={(evt: MouseEvent) => {
                                   evt.stopPropagation()
                                   setEditingState(true)

@@ -15,6 +15,7 @@ import type { TextareaRenderable } from "@opentui/core"
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { For, Match, Show, Switch, createEffect, createMemo, createSignal } from "solid-js"
 import type { PermissionRequest } from "@opencode-ai/sdk/v2"
+import { inheritTerminalCursorStyle } from "@/cli/cmd/cursor-style"
 import {
   createPermissionBodyState,
   permissionAlwaysLines,
@@ -107,6 +108,7 @@ export function RejectField(props: {
       backgroundColor={props.theme.surface}
       focusedBackgroundColor={props.theme.surface}
       cursorColor={props.theme.text}
+      cursorStyle={inheritTerminalCursorStyle}
       focused={!props.disabled}
       onSubmit={props.onConfirm}
       onContentChange={() => {

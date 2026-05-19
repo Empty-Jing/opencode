@@ -17,6 +17,7 @@ import type { TextareaRenderable } from "@opentui/core"
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { For, Show, createEffect, createMemo, createSignal } from "solid-js"
 import type { QuestionRequest } from "@opencode-ai/sdk/v2"
+import { inheritTerminalCursorStyle } from "@/cli/cmd/cursor-style"
 import {
   createQuestionBodyState,
   questionConfirm,
@@ -486,6 +487,7 @@ export function RunQuestionBody(props: {
                             backgroundColor={props.theme.surface}
                             focusedBackgroundColor={props.theme.surface}
                             cursorColor={props.theme.text}
+                            cursorStyle={inheritTerminalCursorStyle}
                             focused={!disabled()}
                             onSubmit={saveCustom}
                             onContentChange={() => {

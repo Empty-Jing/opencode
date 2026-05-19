@@ -12,6 +12,7 @@ import { normalizePromptContent } from "@opencode-ai/tui/editor"
 import fuzzysort from "fuzzysort"
 import path from "path"
 import { createEffect, createMemo, createResource, createSignal, onCleanup, onMount, type Accessor } from "solid-js"
+import { inheritTerminalCursorStyle } from "@/cli/cmd/cursor-style"
 import * as Locale from "@/util/locale"
 import {
   createPromptHistory,
@@ -264,6 +265,7 @@ export function RunPromptBody(props: {
           backgroundColor={props.background()}
           focusedBackgroundColor={props.background()}
           cursorColor={props.theme().text}
+          cursorStyle={inheritTerminalCursorStyle}
           onSubmit={props.onSubmit}
           onKeyDown={props.onKeyDown}
           onPaste={() => {

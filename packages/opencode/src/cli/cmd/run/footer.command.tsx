@@ -3,6 +3,7 @@ import { TextAttributes, type InputRenderable, type KeyEvent } from "@opentui/co
 import { useKeyboard, type JSX } from "@opentui/solid"
 import fuzzysort from "fuzzysort"
 import { createEffect, createMemo, createSignal, type Accessor } from "solid-js"
+import { inheritTerminalCursorStyle } from "@/cli/cmd/cursor-style"
 import { RunFooterMenu, createFooterMenuState, type RunFooterMenuItem } from "./footer.menu"
 import type { RunFooterTheme } from "./theme"
 import type { FooterQueuedPrompt, FooterSubagentTab, RunCommand, RunInput, RunProvider } from "./types"
@@ -259,6 +260,7 @@ function PanelShell(props: {
           placeholder={props.placeholder}
           placeholderColor={props.theme().muted}
           cursorColor={props.theme().highlight}
+          cursorStyle={inheritTerminalCursorStyle}
           onInput={props.onQuery}
           ref={(input) => {
             props.inputRef(input)
