@@ -25,6 +25,9 @@ import { McpOAuthPendingProvider, McpOAuthProvider, OAUTH_CALLBACK_PATH } from "
 import { McpOAuthCallback } from "./oauth-callback"
 import { McpAuth } from "./auth"
 import { EventV2Bridge } from "@/event-v2-bridge"
+import { EventV2 } from "@opencode-ai/core/event"
+import { McpInputCache } from "./input-cache"
+import { MissingInputValueError, resolveMcpInputs } from "./input-template"
 import { TuiEvent } from "@/server/tui-event"
 import { Cause, Effect, Exit, Layer, Context, Schema, Stream } from "effect"
 import { EffectBridge } from "@/effect/bridge"
@@ -369,26 +372,55 @@ const layer = Layer.effect(
       )
     })
 
+    const resolveConfigInputs = Effect.fn("MCP.resolveConfigInputs")(function* (name: string, mcp: ConfigMCPV1.Info) {
+      if (!mcp.inputs?.length) return mcp
+
+      const workspace = yield* InstanceState.directory
+      const values = Object.fromEntries(
+        yield* Effect.forEach(mcp.inputs, (field) =>
+          Effect.promise(() => McpInputCache.get(workspace, name, field.key)).pipe(
+            Effect.map((value) => [field.key, value ?? field.default ?? ""] as const),
+          ),
+        ),
+      )
+
+      try {
+        return resolveMcpInputs(mcp, values)
+      } catch (error) {
+        if (error instanceof MissingInputValueError) return error
+        throw error
+      }
+    })
+
     const create = Effect.fn("MCP.create")(
       function* (key: string, mcp: ConfigMCPV1.Info) {
-        if (mcp.enabled === false) {
+        const resolved = yield* resolveConfigInputs(key, mcp)
+        if (resolved instanceof MissingInputValueError) {
+          return {
+            status: { status: "failed", error: resolved.message },
+          } satisfies CreateResult
+        }
+
+        if (resolved.enabled === false) {
           return DISABLED_RESULT
         }
 
         const { client: mcpClient, status } =
-          mcp.type === "remote"
-            ? yield* connectRemote(key, mcp as ConfigMCPV1.Info & { type: "remote" })
-            : yield* connectLocal(key, mcp as ConfigMCPV1.Info & { type: "local" })
+          resolved.type === "remote"
+            ? yield* connectRemote(key, resolved as ConfigMCPV1.Info & { type: "remote" })
+            : yield* connectLocal(key, resolved as ConfigMCPV1.Info & { type: "local" })
 
         if (!mcpClient) {
           if (status.status !== "connected" && status.status !== "disabled") {
-            yield* Effect.logWarning("server unavailable", { key, type: mcp.type, status: status.status })
+            yield* Effect.logWarning("server unavailable", { key, type: resolved.type, status: status.status })
           }
           return { status } satisfies CreateResult
         }
 
         return yield* Effect.gen(function* () {
-          const listed = mcpClient.getServerCapabilities()?.tools ? yield* McpCatalog.defs(mcpClient, mcp.timeout) : []
+          const listed = mcpClient.getServerCapabilities()?.tools
+            ? yield* McpCatalog.defs(mcpClient, resolved.timeout)
+            : []
           if (!listed) {
             return yield* Effect.fail(new Error("Failed to get tools"))
           }

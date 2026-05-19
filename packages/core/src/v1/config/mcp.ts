@@ -2,6 +2,7 @@ export * as ConfigMCPV1 from "./mcp"
 
 import { Schema } from "effect"
 import { PositiveInt } from "../../schema"
+import { ConfigMCPInputV1 } from "./mcp-input"
 
 export const Local = Schema.Struct({
   type: Schema.Literal("local").annotate({ description: "Type of MCP server connection" }),
@@ -13,6 +14,9 @@ export const Local = Schema.Struct({
   }),
   environment: Schema.optional(Schema.Record(Schema.String, Schema.String)).annotate({
     description: "Environment variables to set when running the MCP server",
+  }),
+  inputs: Schema.optional(Schema.mutable(Schema.Array(ConfigMCPInputV1.Field))).annotate({
+    description: "Interactive input fields collected by the TUI before connecting the MCP server",
   }),
   enabled: Schema.optional(Schema.Boolean).annotate({
     description: "Enable or disable the MCP server on startup",
@@ -49,6 +53,9 @@ export const Remote = Schema.Struct({
   }),
   headers: Schema.optional(Schema.Record(Schema.String, Schema.String)).annotate({
     description: "Headers to send with the request",
+  }),
+  inputs: Schema.optional(Schema.mutable(Schema.Array(ConfigMCPInputV1.Field))).annotate({
+    description: "Interactive input fields collected by the TUI before connecting the MCP server",
   }),
   oauth: Schema.optional(Schema.Union([OAuth, Schema.Literal(false)])).annotate({
     description: "OAuth authentication configuration for the MCP server. Set to false to disable OAuth auto-detection.",

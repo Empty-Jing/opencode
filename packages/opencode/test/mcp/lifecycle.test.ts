@@ -14,9 +14,11 @@ import {
   type Tool,
 } from "@modelcontextprotocol/sdk/types.js"
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
+import { Global } from "@opencode-ai/core/global"
 import { Cause, Effect, Exit } from "effect"
 import type { MCP as MCPNS } from "../../src/mcp/index"
 import { MCP } from "../../src/mcp/index"
+import { McpInputCache } from "../../src/mcp/input-cache"
 import { McpOAuthCallback } from "../../src/mcp/oauth-callback"
 import { TestInstance } from "../fixture/fixture"
 import { pollWithTimeout, testEffect } from "../lib/effect"
@@ -214,6 +216,52 @@ it.instance(
       )
     }),
   { init: (directory) => Effect.promise(() => Bun.$`mkdir -p ${path.join(directory, "plugins/sub")}`.quiet()) },
+)
+
+it.instance(
+  "connect() resolves cached MCP inputs from state storage",
+  () =>
+    Effect.gen(function* () {
+      const test = yield* TestInstance
+      const previous = Global.Path.state
+      yield* Effect.acquireUseRelease(
+        Effect.promise(async () => {
+          Global.Path.state = path.join(test.directory, "state")
+          await Bun.$`mkdir -p ${Global.Path.state}`.quiet()
+          await McpInputCache.reset()
+          await McpInputCache.set(test.directory, "cached-server", "host", "10.0.0.8")
+          await McpInputCache.set(test.directory, "cached-server", "port", "2222")
+        }),
+        () =>
+          Effect.gen(function* () {
+            const mcp = yield* MCP.Service
+            yield* mcp.connect("cached-server")
+            expect((yield* mcp.status())["cached-server"]?.status).toBe("connected")
+            expect((yield* mcp.tools())["cached-server_current_directory"]?.def.description).toBe("10.0.0.8:2222")
+          }),
+        () =>
+          Effect.promise(async () => {
+            await McpInputCache.reset()
+            Global.Path.state = previous
+          }),
+      )
+    }),
+  {
+    config: {
+      mcp: {
+        "cached-server": {
+          type: "local",
+          command: [process.execPath, stdioFixture],
+          enabled: false,
+          environment: { MCP_LIFECYCLE_DESCRIPTION: "{input:host}:{input:port}" },
+          inputs: [
+            { key: "host", required: true },
+            { key: "port", default: "22" },
+          ],
+        },
+      },
+    },
+  },
 )
 
 it.instance("tools() reuses cached definitions until a protocol notification", () =>

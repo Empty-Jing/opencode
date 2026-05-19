@@ -16,7 +16,7 @@ server.setRequestHandler(ListToolsRequestSchema, () =>
     tools: [
       {
         name: "current_directory",
-        description: process.cwd(),
+        description: process.env.MCP_LIFECYCLE_DESCRIPTION ?? process.cwd(),
         inputSchema: { type: "object", properties: {} },
       },
     ],

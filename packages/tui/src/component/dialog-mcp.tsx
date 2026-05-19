@@ -49,16 +49,14 @@ export function DialogMcp() {
       command: "dialog.mcp.toggle",
       title: "toggle",
       onTrigger: async (option: DialogSelectOption<string>) => {
-        // Prevent toggling while an operation is already in progress
         if (loading() !== null) return
 
         setLoading(option.value)
         try {
           await local.mcp.toggle(option.value)
-          // Refresh MCP status from server
-          const status = await sdk.client.mcp.status()
-          if (status.data) {
-            sync.set("mcp", status.data)
+          const refreshed = await sdk.client.mcp.status()
+          if (refreshed.data) {
+            sync.set("mcp", refreshed.data)
           } else {
             console.error("Failed to refresh MCP status: no data returned")
           }
@@ -78,7 +76,7 @@ export function DialogMcp() {
       options={options()}
       actions={actions()}
       onSelect={(_option) => {
-        // Don't close on select, only on escape
+        // Don\'t close on select, only on escape
       }}
     />
   )
