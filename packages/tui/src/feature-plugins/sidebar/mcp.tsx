@@ -12,6 +12,7 @@ import { TuiMcpInputCache } from "../../mcp/input-cache"
 import { resolveMcpInputs } from "../../mcp/input-template"
 import { inheritTerminalCursorStyle } from "../../util/cursor-style"
 import { onCleanup } from "solid-js"
+import { useOpencodeModeStack } from "../../keymap"
 
 const id = "internal:sidebar-mcp"
 
@@ -26,7 +27,9 @@ function View(props: { api: TuiPluginApi }) {
   const [drafts, setDrafts] = createStore<Record<string, DraftStore>>({})
   const inputs: Record<string, Record<string, TextareaRenderable | undefined>> = {}
   let previousFocus: Renderable | null = null
+  let disposeEditingMode: (() => void) | undefined
   const renderer = useRenderer()
+  const modeStack = useOpencodeModeStack()
   const sync = useSync()
   const sdk = useSDK()
   const workspace = () => sync.path.directory || sdk.directory
@@ -56,6 +59,7 @@ function View(props: { api: TuiPluginApi }) {
   })
 
   onCleanup(() => {
+    disposeEditingMode?.()
     unregisterCommand()
   })
 
@@ -79,8 +83,11 @@ function View(props: { api: TuiPluginApi }) {
   function setEditingState(next: boolean) {
     if (editing() === next) return
     if (next) {
+      disposeEditingMode = modeStack.push("sidebar.mcp.input")
       previousFocus = renderer.currentFocusedRenderable
     } else {
+      disposeEditingMode?.()
+      disposeEditingMode = undefined
       for (const group of Object.values(inputs)) {
         for (const input of Object.values(group)) {
           if (!input || input.isDestroyed || !input.focused) continue
